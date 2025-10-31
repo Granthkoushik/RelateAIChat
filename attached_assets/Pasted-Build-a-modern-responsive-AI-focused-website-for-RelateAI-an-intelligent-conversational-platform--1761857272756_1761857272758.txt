@@ -1,0 +1,79 @@
+Build a modern, responsive, AI-focused website for RelateAI, an intelligent conversational platform that helps users interact with a safe AI assistant. The website should be clean, professional, and mobile-friendly, with AI-chat inspired design.
+
+Primary Pages and Features:
+
+1. Signup/Login Page
+
+Collect user information: Name, Email, Phone Number, Password, Age.
+
+Age handling: under 18 → teen mode; 18+ → adult mode.
+
+Validate required fields and enforce secure password rules.
+
+Provide buttons for Signup and Login.
+
+Redirect to Home page on successful login/signup.
+
+2. Home/About Page
+
+Brief description of RelateAI: “RelateAI helps you communicate, express yourself, and explore thoughts safely with an intelligent AI assistant.”
+
+“Chat Now” button to navigate to Chat page.
+
+Highlight upcoming features:
+
+Family and Friends vaults
+
+Personalized recommendations
+
+Mood tracking & emotional insights
+
+3. Chat Page
+
+Two active vaults by default: Normal Vault & Temporary Vault.
+
+Future vaults (Family/Friends) shown as “Coming Soon.”
+
+Chat UI: scrollable conversation window, chat bubbles for user/AI, input at bottom, send button.
+
+Connect to Python LLaMA model backend via API POST requests (/chat).
+
+AI replies should be visually distinct and follow safe conversational guidelines.
+
+4. Settings Page
+
+Appearance: Dark, Light, Gray themes; default auto-follow system theme.
+
+Profile Info: Display and edit Name, Email, Phone Number, Age.
+
+Age Handling Toggle: On/off with first-time passcode protection.
+
+Save preferences locally or via backend API.
+
+5. General Requirements
+
+Fully responsive, desktop + mobile friendly.
+
+Navigation menu accessible on all pages (Signup/Login → Home → Chat → Settings).
+
+Future-ready:
+
+Integration of more AI features, vault types, and emotional analysis.
+
+Ability to connect to Python-based LLM models for AI conversation.
+
+Expansion of AI capabilities (advice, productivity suggestions, safe interactions).
+
+Safe AI responses: Teen mode avoids sexual content; adult mode allows guidance/advice.
+
+Ready for API integration with backend model.
+
+6. Visual and UX
+
+AI-assistant style, modern clean UI, readable fonts, professional color palette.
+
+Chat interface with clear user/AI separation, easy-to-read text, smooth scroll.
+
+Buttons, forms, and inputs consistent with AI theme.
+
+Future feature placeholders (e.g., Family/Friends Vault, Analytics Dashboard) clearly shown but marked as “Coming Soon.”
