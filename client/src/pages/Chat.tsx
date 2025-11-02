@@ -33,9 +33,18 @@ export default function Chat() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
+      // Map vault to model prefix
+      const vaultModelMap = {
+        normal: "normal",
+        temporary: "temp",
+        family: "family",
+        friends: "friends"
+      };
+      
+      const modelPrefix = vaultModelMap[vault];
       const model = user?.ageMode === "teen" 
-        ? (vault === "temporary" ? "temp_teen" : "normal_teen")
-        : (vault === "temporary" ? "temp_adult" : "normal_adult");
+        ? `${modelPrefix}_teen`
+        : `${modelPrefix}_adult`;
 
       await apiRequest("POST", "/api/messages", {
         vault,
@@ -104,21 +113,11 @@ export default function Chat() {
               <SelectItem value="temporary" data-testid="option-vault-temporary">
                 Temporary Vault
               </SelectItem>
-              <SelectItem value="family" disabled data-testid="option-vault-family">
-                <div className="flex items-center gap-2">
-                  Family Vault
-                  <Badge variant="secondary" className="text-xs opacity-50">
-                    Coming Soon
-                  </Badge>
-                </div>
+              <SelectItem value="family" data-testid="option-vault-family">
+                Family Vault
               </SelectItem>
-              <SelectItem value="friends" disabled data-testid="option-vault-friends">
-                <div className="flex items-center gap-2">
-                  Friends Vault
-                  <Badge variant="secondary" className="text-xs opacity-50">
-                    Coming Soon
-                  </Badge>
-                </div>
+              <SelectItem value="friends" data-testid="option-vault-friends">
+                Friends Vault
               </SelectItem>
             </SelectContent>
           </Select>
