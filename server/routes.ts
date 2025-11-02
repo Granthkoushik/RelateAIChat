@@ -1,3 +1,4 @@
+//import fetch from "node-fetch";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -26,14 +27,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const profileData = updateProfileSchema.parse(req.body);
-      
+
       const updatedUser = await storage.updateProfile(userId, profileData);
       res.json(updatedUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Validation error",
+          errors: error.errors
         });
       }
       console.error("Error updating profile:", error);
@@ -46,11 +47,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Return only settings-related fields
       res.json({
         theme: user.theme,
@@ -66,14 +67,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const settingsData = updateSettingsSchema.parse(req.body);
-      
+
       const updatedUser = await storage.updateSettings(userId, settingsData);
       res.json(updatedUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Validation error",
+          errors: error.errors
         });
       }
       console.error("Error updating settings:", error);
@@ -86,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const vault = req.params.vault;
-      
+
       const messages = await storage.getMessages(userId, vault);
       res.json(messages);
     } catch (error) {
@@ -99,8 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { vault, content, model } = req.body;
-      
-      // Validate input
+
       if (!vault || !content || !model) {
         return res.status(400).json({ message: "Missing required fields" });
       }
@@ -114,22 +114,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model,
       });
 
-      // Generate AI response (mock for now - will be replaced with Python LLaMA backend)
-      const aiResponse = await generateAIResponse(content, model);
-      
-      // Save AI response
+      // Generate AI response (Python backend call)
+      const backendResponse = await callLlamaBackend(content, model);
+      const aiReply = backendResponse.reply;
+
+      // Save assistant message
       const assistantMessage = await storage.createMessage({
         userId,
         vault,
         role: "assistant",
-        content: aiResponse,
+        content: aiReply,
         model,
       });
 
       res.json({ userMessage, assistantMessage });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating message:", error);
-      res.status(500).json({ message: "Failed to create message" });
+      res.status(500).json({ message: error.message || "Failed to create message" });
     }
   });
 
@@ -149,28 +150,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Mock AI response generator - will be replaced with Python LLaMA backend integration
-async function generateAIResponse(userMessage: string, model: string): Promise<string> {
-  // This is a placeholder. In production, this would call the Python LLaMA backend at /chat
-  // Example: POST to http://python-backend:port/chat with { message, model }
-  
+// -------------------
+// Python LLaMA backend call
+// -------------------
+const backendUrl = process.env.LLAMA_BACKEND_URL || "http://127.0.0.1:5000/generate";
+
+async function callLlamaBackend(
+  content: string,
+  model?: string,
+  age?: number,
+  vault?: string
+) {
+  const body: any = { message: content };
+
+  if (model) {
+    body.model = model;
+  } else {
+    if (age !== undefined) body.age = age;
+    if (vault) body.vault = vault;
+  }
+
+  const resp = await fetch(backendUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Backend error: ${resp.status} ${text}`);
+  }
+
+  const data = await resp.json();
+  return data; // { reply, model_used }
+}
+
+// -------------------
+// Mock AI response function for testing/demo
+// -------------------
+export function mockAIResponse(userMessage: string, model: string) {
   const isTeen = model.includes("teen");
   const isTemp = model.includes("temp");
-  
-  // Simple mock responses based on mode
+
   const responses = {
-    greeting: isTeen 
-      ? "Hi! I'm here to chat and help you with whatever's on your mind. What would you like to talk about?" 
-      : "Hello! I'm RelateAI, your conversational companion. How can I assist you today?",
+    greeting: isTeen
+    ? "Hi! I'm here to chat and help you with whatever's on your mind. What would you like to talk about?"
+    : "Hello! I'm RelateAI, your conversational companion. How can I assist you today?",
     general: isTeen
-      ? "That's interesting! I'd be happy to discuss that with you. Tell me more about what you're thinking."
-      : "I understand. Let's explore that topic together. What specific aspects would you like to discuss?",
+    ? "That's interesting! I'd be happy to discuss that with you. Tell me more about what you're thinking."
+    : "I understand. Let's explore that topic together. What specific aspects would you like to discuss?",
     temporary: isTemp
-      ? "I'm here for a quick chat. Remember, our conversation is temporary and won't be saved."
-      : "I'm listening. Feel free to share your thoughts openly.",
+    ? "I'm here for a quick chat. Remember, our conversation is temporary and won't be saved."
+    : "I'm listening. Feel free to share your thoughts openly.",
   };
 
-  // Simple keyword matching for demo purposes
   const lowerMessage = userMessage.toLowerCase();
   if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
     return responses.greeting;
@@ -178,6 +211,6 @@ async function generateAIResponse(userMessage: string, model: string): Promise<s
   if (isTemp) {
     return responses.temporary;
   }
-  
+
   return responses.general;
 }
